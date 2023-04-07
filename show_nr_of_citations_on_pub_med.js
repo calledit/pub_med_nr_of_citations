@@ -6,6 +6,9 @@
 // @grant    GM.getValue
 // @grant    GM.registerMenuCommand
 // @grant    GM.xmlHttpRequest
+// @grant    GM.deleteValue
+
+
 
 // ==/UserScript==
 
@@ -41,8 +44,12 @@ async function get_pub_med_citations(pub_med_id, list_element){
       method: "GET",
       url: citations_url,
       onload: function(response) {
-        GM.setValue(pub_med_id, response.responseText);
-        deal_with_citaions(list_element, response.responseText)
+        if(response.finalUrl != citations_url){
+        	console.log("was redirected from:", citations_url, response)
+        }else{
+        	GM.setValue(pub_med_id, response.responseText);
+        	deal_with_citaions(list_element, response.responseText)
+        }
       }
     });
   }else{
@@ -51,10 +58,12 @@ async function get_pub_med_citations(pub_med_id, list_element){
 }
 const search_nr_str = '<span class="value">'; 
 function deal_with_citaions(list_element, html){
-  
-  var mid = html.substring(html.search(search_nr_str)+search_nr_str.length);
-  var nr_of_citations = mid.substring(0, mid.search('<'));
-  
+  var res_count = html.search(search_nr_str)
+  var mid = html.substring(res_count+search_nr_str.length);
+  var nr_of_citations = Number(mid.substring(0, mid.search('<')));
+  if(Number.isNaN(nr_of_citations) || res_count == -1){
+  	nr_of_citations = "Failed to get citation count";
+  }
   render_nr_of_citaions(list_element, nr_of_citations)
 }
 
