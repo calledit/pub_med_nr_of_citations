@@ -35,7 +35,10 @@ var observeDOM = (function(){
   }
 })()
 
-async function get_pub_med_citations(pub_med_id, list_element){
+async function get_pub_med_citations(pub_med_id, list_element, try_count){
+  if(typeof(try_count) == 'undefined'){
+  	try_count = 0;
+  }
 	var cached_html = await GM.getValue(pub_med_id, false);
   var citations_url = "https://pubmed.ncbi.nlm.nih.gov/?linkname=pubmed_pubmed_citedin&from_uid="+pub_med_id;
   //console.log(citations_url);
@@ -46,9 +49,19 @@ async function get_pub_med_citations(pub_med_id, list_element){
       onload: function(response) {
         if(response.finalUrl != citations_url){
         	console.log("was redirected from:", citations_url, response)
+          if(try_count < 3){
+          	setTimeout(function(){
+            	get_pub_med_citations(pub_med_id, list_element, try_count + 1);
+          	},1000);
+          }else{
+          	render_nr_of_citaions(list_element, "PubMed could not return nr of citations");
+          }
         }else{
-        	GM.setValue(pub_med_id, response.responseText);
-        	deal_with_citaions(list_element, response.responseText)
+          var got_proper_citations = deal_with_citaions(list_element, response.responseText);
+          if(got_proper_citations){
+        		GM.setValue(pub_med_id, response.responseText);
+          }
+        	
         }
       }
     });
@@ -58,13 +71,18 @@ async function get_pub_med_citations(pub_med_id, list_element){
 }
 const search_nr_str = '<span class="value">'; 
 function deal_with_citaions(list_element, html){
+  var ret = true;
   var res_count = html.search(search_nr_str)
   var mid = html.substring(res_count+search_nr_str.length);
-  var nr_of_citations = Number(mid.substring(0, mid.search('<')));
+  var nr_of_citations_str = mid.substring(0, mid.search('<'));
+  nr_of_citations = Number(nr_of_citations_str.replace(/[^\d.-]+/g, ''));
   if(Number.isNaN(nr_of_citations) || res_count == -1){
   	nr_of_citations = "Failed to get citation count";
+    console.log(nr_of_citations_str);
+    ret = false;
   }
-  render_nr_of_citaions(list_element, nr_of_citations)
+  render_nr_of_citaions(list_element, nr_of_citations);
+  return(ret);
 }
 
 function render_nr_of_citaions(list_element, nr_of_citations){
