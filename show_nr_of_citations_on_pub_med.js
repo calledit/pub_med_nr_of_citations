@@ -1,11 +1,11 @@
 // ==UserScript==
 // @name     Order by nr of citations
 // @version  1
-// @include			https://pubmed.ncbi.nlm.nih.gov/*
-// @grant       GM.setValue
-// @grant       GM.getValue
-// @grant       GM.registerMenuCommand
-// @grant       GM.xmlHttpRequest
+// @include  https://pubmed.ncbi.nlm.nih.gov/*
+// @grant    GM.setValue
+// @grant    GM.getValue
+// @grant    GM.registerMenuCommand
+// @grant    GM.xmlHttpRequest
 
 // ==/UserScript==
 
@@ -82,6 +82,11 @@ function parse_dom_references(m){
 function get_citations(){
 	console.log("Getting citations")
   
+  //Get self citations
+  var own_pubmed_id = document.querySelector(".current-id").innerHTML;
+  get_pub_med_citations(own_pubmed_id, document.querySelector(".heading-title"));
+  
+  //Get citations for references
   refcontainer = document.querySelector(".refs-list");
   if(!refcontainer){
   	return false;
